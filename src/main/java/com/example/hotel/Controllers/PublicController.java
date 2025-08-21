@@ -24,14 +24,14 @@ public class PublicController {
     @PostMapping("/signUp")
     public ResponseEntity<?> signUp(@RequestBody UserModel user) {
         // Check if user already exists
-        Optional<UserModel> existingUser = userServices.findUser(user.getEmail());
+        Optional<UserModel> existingUser = userServices.findUserByEmail(user.getEmail());
         if (existingUser.isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("User with this email already exists!");
         }
 
         // Add new user
-        userServices.addUser(user);
+        userServices.saveUser(user);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body("User created successfully!");
     }

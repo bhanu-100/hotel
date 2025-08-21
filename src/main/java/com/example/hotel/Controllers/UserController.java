@@ -19,7 +19,7 @@ public class UserController {
     // Login API
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserModel loginRequest) {
-        Optional<UserModel> userOptional = userServices.findUser(loginRequest.getEmail());
+        Optional<UserModel> userOptional = userServices.findUserByEmail(loginRequest.getEmail());
 
         if (userOptional.isPresent()) {
             UserModel user = userOptional.get();
