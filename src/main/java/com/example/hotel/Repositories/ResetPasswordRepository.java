@@ -4,6 +4,7 @@ import com.example.hotel.Models.ResetPasswordModel;
 import com.example.hotel.Models.UserModel;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ResetPasswordRepository extends JpaRepository<ResetPasswordModel, Long> {
@@ -13,4 +14,6 @@ public interface ResetPasswordRepository extends JpaRepository<ResetPasswordMode
 
     // Find active (unused) token for a specific user
     Optional<ResetPasswordModel> findByUserAndUsedFalse(UserModel user);
+
+
 }

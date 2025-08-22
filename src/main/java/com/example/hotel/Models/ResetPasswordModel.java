@@ -1,17 +1,17 @@
 package com.example.hotel.Models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "reset_password_tokens")
 public class ResetPasswordModel {
@@ -24,13 +24,22 @@ public class ResetPasswordModel {
     private String token;
 
     @Column(nullable = false)
-    private Date expiryDate;
+    private LocalDateTime expiryDate;
 
     @Column(nullable = false)
     private boolean used = false;
+
+    @Column(nullable = false)
+    private boolean isActive = true;
 
     // Many reset tokens belong to one user
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserModel user;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

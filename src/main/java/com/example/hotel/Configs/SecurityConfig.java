@@ -51,17 +51,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF since JWT is stateless
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // no sessions
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/public/**").permitAll() // signup/login
+                        // Public endpoints
+                        .requestMatchers("/public/**").permitAll()
+                        // Swagger endpoints
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // Admin endpoints
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        // Hotel owner endpoints
                         .requestMatchers("/hotel/**").hasRole("HOTEL_OWNER")
+                        // Customer endpoints
                         .requestMatchers("/user/**").hasRole("CUSTOMER")
+                        // Room, Booking, Payment endpoints (if needed role-based, otherwise authenticated)
+                        .requestMatchers("/rooms/**", "/bookings/**", "/payments/**").authenticated()
+                        // Any other request must be authenticated
                         .anyRequest().authenticated()
                 );
 
-        // Add JWT filter before Spring’s UsernamePasswordAuthenticationFilter
+        // JWT filter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
