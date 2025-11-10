@@ -5,6 +5,7 @@ import com.example.hotel.DTOs.PasswordResetDTO;
 import com.example.hotel.DTOs.PasswordResetRequestDTO;
 import com.example.hotel.DTOs.UserRequestDTO;
 import com.example.hotel.Enums.UserRoles;
+import com.example.hotel.Models.ResetPasswordModel;
 import com.example.hotel.Models.UserModel;
 import com.example.hotel.Services.ResetPasswordService;
 import com.example.hotel.Services.UserService;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Tag(name = "User Operations", description = "APIs for user management and authentication")
 @RestController
@@ -86,22 +88,34 @@ public class PublicController {
 
             if (authentication.isAuthenticated()) {
                 var roles = authentication.getAuthorities().stream()
-                        .map(a -> a.getAuthority()).toList();
+                        .map(a -> a.getAuthority())
+                        .toList();
 
                 String accessToken = jwtUtil.generateAccessToken(loginDTO.getEmail(), roles);
                 String refreshToken = jwtUtil.generateRefreshToken(loginDTO.getEmail());
 
-                Map<String, String> tokens = new HashMap<>();
+                Map<String, Object> tokens = new HashMap<>();
+                tokens.put("status", "success");
+                tokens.put("message", "Login successful");
                 tokens.put("accessToken", accessToken);
                 tokens.put("refreshToken", refreshToken);
+                tokens.put("expiresIn", 1000 * 60 * 15);
 
                 return ResponseEntity.ok(tokens);
             } else {
                 throw new BadCredentialsException("Invalid email or password");
             }
+
         } catch (BadCredentialsException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid email or password!");
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Invalid email or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        } catch (Exception ex) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Something went wrong");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
@@ -109,17 +123,30 @@ public class PublicController {
     @PostMapping("/forget-password")
     public ResponseEntity<?> requestPasswordReset(@Valid @RequestBody PasswordResetRequestDTO requestDTO) {
         return resetPasswordService.createResetToken(requestDTO.getEmail())
-                .map(token -> ResponseEntity.ok("Reset token generated: " + token.getToken()))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("User not found"));
+                .map(token -> {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("status", "success");
+                    response.put("message", "Reset token generated and sent successfully to email!");
+                    return ResponseEntity.ok(response);
+                })
+                .orElseGet(() -> {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("status", "error");
+                    response.put("message", "User not found");
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+                });
     }
+
 
     @Operation(summary = "Reset password", description = "Reset user's password using token")
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetDTO resetDTO) {
+        Map<String, Object> response = new HashMap<>();
+
         if (!resetPasswordService.validateToken(resetDTO.getToken())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Token is invalid or expired");
+            response.put("status", "error");
+            response.put("message", "Token is invalid or expired");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
         boolean success = resetPasswordService.resetPassword(
@@ -128,10 +155,14 @@ public class PublicController {
         );
 
         if (success) {
-            return ResponseEntity.ok("Password updated successfully!");
+            response.put("status", "success");
+            response.put("message", "Password updated successfully!");
+            return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Failed to reset password");
+            response.put("status", "error");
+            response.put("message", "Failed to reset password");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
+
 }

@@ -43,25 +43,42 @@ public class ResetPasswordService {
 
         UserModel user = userOpt.get();
 
-        // Check existing valid token
+        // ✅ Check if a valid token already exists
         Optional<ResetPasswordModel> existingToken = resetPasswordRepository.findByUserAndUsedFalse(user);
         if (existingToken.isPresent() && existingToken.get().getExpiryDate().isAfter(LocalDateTime.now())) {
             return existingToken;
         }
 
-        // Create new token
+        // ✅ Create a new token
         ResetPasswordModel resetToken = new ResetPasswordModel();
         resetToken.setToken(generateSecureToken());
         resetToken.setUser(user);
         resetToken.setUsed(false);
         resetToken.setExpiryDate(LocalDateTime.now().plusMinutes(15)); // expires in 15 minutes
-
         resetPasswordRepository.save(resetToken);
 
-        // Send email (can be HTML template)
-        String body = "Hi " + user.getName() + ",\nUse this token to reset your password: " + resetToken.getToken()
-                + "\nThis token will expire in 15 minutes.";
-        emailService.sendSimpleEmail(user.getEmail(), "Password Reset Request", body);
+        // ✅ Construct the reset link (frontend route)
+        String resetLink = "http://localhost:5173/reset-password?token=" + resetToken.getToken();
+
+        // ✅ HTML Email Body (clean, styled, user-friendly)
+        String body = """
+        <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2>Password Reset Request</h2>
+            <p>Hi %s,</p>
+            <p>We received a request to reset your password for your account.</p>
+            <p>Click the link below to reset your password:</p>
+            <a href="%s" 
+               style="display:inline-block; background-color:#007bff; color:white; padding:10px 20px; 
+                      text-decoration:none; border-radius:5px;">Reset Password</a>
+            <p style="margin-top:20px;">This link will expire in <strong>15 minutes</strong>.</p>
+            <p>If you didn’t request this, you can safely ignore this email.</p>
+            <hr>
+            <p style="font-size:12px; color:#777;">This is an automated message, please do not reply.</p>
+        </div>
+        """.formatted(user.getName(), resetLink);
+
+        // ✅ Send email (HTML format)
+        emailService.sendHtmlEmail(user.getEmail(), "Password Reset Request", body);
 
         return Optional.of(resetToken);
     }

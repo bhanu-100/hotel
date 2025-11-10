@@ -14,17 +14,17 @@ import java.util.stream.Collectors;
 public class JwtUtil {
 
     private final Key key;
-    private final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 15;   // 15 minutes
-    private final long REFRESH_TOKEN_EXPIRATION = 1000 * 60 * 60 * 24; // 24 hours
+    private final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 15 ;   // 15 minutes
+    private final long REFRESH_TOKEN_EXPIRATION = 1000 * 60 * 60 * 24 ; // 24 hours
 
     public JwtUtil(@Value("${jwt.secret}") String secretKey) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
     // Generate Access Token with roles
-    public String generateAccessToken(String username, List<String> roles) {
+    public String generateAccessToken(String userEmail, List<String> roles) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(userEmail)
                 .claim("roles", roles) // store roles
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
@@ -33,9 +33,9 @@ public class JwtUtil {
     }
 
     // Generate Refresh Token (no roles needed)
-    public String generateRefreshToken(String username) {
+    public String generateRefreshToken(String userEmail) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(userEmail)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
                 .signWith(key, SignatureAlgorithm.HS256)
